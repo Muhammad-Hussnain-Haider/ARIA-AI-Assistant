@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARIA — Sign In</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --accent:#6c63ff;--accent2:#8b5cf6;--accent3:#a78bfa;
+  --bg:#0f0f1a;--card:#1a1a2e;--card2:#16213e;
+  --text:#e2e8f0;--text2:#94a3b8;--border:#2d2d4e;
+  --success:#10b981;--danger:#ef4444;
+}
+html,body{
+  height:100%;overflow:hidden;
+  background:var(--bg);color:var(--text);
+  font-family:'Segoe UI',system-ui,sans-serif;
+}
+body{display:flex;align-items:center;justify-content:center}
+
+body::before{
+  content:'';position:fixed;inset:0;
+  background:
+    radial-gradient(circle at 20% 50%, rgba(108,99,255,.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(139,92,246,.08) 0%, transparent 50%),
+    radial-gradient(circle at 60% 80%, rgba(167,139,250,.06) 0%, transparent 40%);
+  pointer-events:none;
+}
+
+.wrap{width:100%;max-width:400px;padding:16px}
+
+.logo{text-align:center;margin-bottom:20px}
+.logo-name{
+  font-size:1.6rem;font-weight:700;
+  background:linear-gradient(135deg,var(--accent),var(--accent3));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.logo-tag{font-size:.78rem;color:var(--text2);margin-top:2px}
+
+.card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:16px;padding:24px;
+}
+
+.tabs{display:flex;background:var(--card2);border-radius:9px;padding:3px;margin-bottom:20px;gap:3px}
+.tab{
+  flex:1;padding:8px;border-radius:6px;font-size:.85rem;font-weight:500;
+  background:transparent;color:var(--text2);border:none;cursor:pointer;transition:all .2s;
+}
+.tab.active{background:var(--accent);color:#fff}
+
+.alert{
+  padding:8px 12px;border-radius:7px;font-size:.81rem;
+  margin-bottom:12px;display:none;
+}
+.alert.error{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#fca5a5}
+.alert.success{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);color:#6ee7b7}
+.alert.show{display:block}
+
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:.77rem;color:var(--text2);margin-bottom:4px;font-weight:500}
+.form-group input{
+  width:100%;background:var(--card2);border:1px solid var(--border);
+  border-radius:9px;padding:9px 12px;color:var(--text);
+  font-size:.87rem;transition:border-color .2s;font-family:inherit;
+}
+.form-group input:focus{outline:none;border-color:var(--accent)}
+.form-group input::placeholder{color:#4a4a6a}
+
+.submit-btn{
+  width:100%;padding:11px;border-radius:9px;border:none;cursor:pointer;
+  font-size:.9rem;font-weight:600;margin-top:4px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;transition:opacity .2s,transform .1s;letter-spacing:.3px;
+}
+.submit-btn:hover{opacity:.9}
+.submit-btn:active{transform:scale(.98)}
+
+.helper{font-size:.75rem;color:var(--text2);text-align:center;margin-top:12px}
+
+.spinner{
+  display:none;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;
+  vertical-align:middle;margin-right:5px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <div class="logo-name">ARIA</div>
+    <div class="logo-tag">AI Personal Assistant</div>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" id="tabLogin" onclick="switchTab('login')">Sign In</button>
+      <button class="tab" id="tabSignup" onclick="switchTab('signup')">Create Account</button>
+    </div>
+
+    <div class="alert" id="alertBox"></div>
+
+    <!-- LOGIN -->
+    <div id="loginForm">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="yourname@example.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password">
+      </div>
+      <button class="submit-btn" onclick="handleLogin()">
+        <span class="spinner" id="loginSpinner"></span>Sign In
+      </button>
+      <div class="helper">No account? <a href="#" onclick="switchTab('signup')" style="color:var(--accent3)">Create one</a></div>
+    </div>
+
+    <!-- SIGNUP -->
+    <div id="signupForm" style="display:none">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="signupName" placeholder="Your Name" autocomplete="name">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="signupEmail" placeholder="yourname@example.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="signupPassword" placeholder="Min 6 characters" autocomplete="new-password">
+      </div>
+      <div class="form-group">
+        <label>Confirm Password</label>
+        <input type="password" id="signupConfirm" placeholder="Repeat password" autocomplete="new-password">
+      </div>
+      <button class="submit-btn" onclick="handleSignup()">
+        <span class="spinner" id="signupSpinner"></span>Create Account
+      </button>
+      <div class="helper">Have an account? <a href="#" onclick="switchTab('login')" style="color:var(--accent3)">Sign in</a></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:8000';
+
+function switchTab(tab) {
+  document.getElementById('loginForm').style.display = tab==='login'?'block':'none';
+  document.getElementById('signupForm').style.display = tab==='signup'?'block':'none';
+  document.getElementById('tabLogin').classList.toggle('active', tab==='login');
+  document.getElementById('tabSignup').classList.toggle('active', tab==='signup');
+  hideAlert();
+}
+function showAlert(msg, type='error') {
+  const el=document.getElementById('alertBox');
+  el.textContent=msg; el.className=`alert ${type} show`;
+}
+function hideAlert(){ document.getElementById('alertBox').className='alert' }
+function setLoading(id, on){ document.getElementById(id).style.display=on?'inline-block':'none' }
+
+async function handleLogin() {
+  const email=document.getElementById('loginEmail').value.trim();
+  const password=document.getElementById('loginPassword').value;
+  if(!email||!password){showAlert('Email and password are required!');return}
+  setLoading('loginSpinner',true);
+  try {
+    const r=await fetch(`${API}/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const d=await r.json();
+    if(!r.ok){showAlert(d.detail||'Login failed.');return}
+    localStorage.setItem('aria_token',d.access_token);
+    localStorage.setItem('aria_user',JSON.stringify(d.user));
+    showAlert('Login successful! Redirecting...','success');
+    setTimeout(()=>window.location.href='/',800);
+  } catch(e){ showAlert('Connection failed!') }
+  finally{ setLoading('loginSpinner',false) }
+}
+
+async function handleSignup() {
+  const name=document.getElementById('signupName').value.trim();
+  const email=document.getElementById('signupEmail').value.trim();
+  const password=document.getElementById('signupPassword').value;
+  const confirm=document.getElementById('signupConfirm').value;
+  if(!name||!email||!password){showAlert('All fields are required!');return}
+  if(password.length<6){showAlert('Password must be at least 6 characters long!');return}
+  if(password!==confirm){showAlert('Passwords do not match!');return}
+  setLoading('signupSpinner',true);
+  try {
+    const r=await fetch(`${API}/auth/signup`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,password})});
+    const d=await r.json();
+    if(!r.ok){showAlert(d.detail||'Signup failed.');return}
+    localStorage.setItem('aria_token',d.access_token);
+    localStorage.setItem('aria_user',JSON.stringify(d.user));
+    showAlert('Account created successfully! Redirecting...','success');
+    setTimeout(()=>window.location.href='/',800);
+  } catch(e){ showAlert('Connection failed!') }
+  finally{ setLoading('signupSpinner',false) }
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter')return;
+  const loginVisible=document.getElementById('loginForm').style.display!=='none';
+  if(loginVisible) handleLogin(); else handleSignup();
+});
+
+if(localStorage.getItem('aria_token')) window.location.href='/';
+</script>
+</body>
+</html>

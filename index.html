@@ -1,0 +1,1581 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ARIA — AI Personal Assistant</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      :root {
+        --accent: #6c63ff;
+        --accent2: #8b5cf6;
+        --accent3: #a78bfa;
+        --bg: #0f0f1a;
+        --card: #1a1a2e;
+        --card2: #16213e;
+        --text: #e2e8f0;
+        --text2: #94a3b8;
+        --border: #2d2d4e;
+        --success: #10b981;
+        --warn: #f59e0b;
+        --danger: #ef4444;
+        --high: #ef4444;
+        --med: #f59e0b;
+        --low: #10b981;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        min-height: 100vh;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      button {
+        cursor: pointer;
+        border: none;
+        outline: none;
+      }
+      input,
+      select,
+      textarea {
+        outline: none;
+        font-family: inherit;
+      }
+
+      /* ── Scrollbar ── */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--card);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--accent);
+        border-radius: 3px;
+      }
+
+      /* ── Nav ── */
+      nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        background: rgba(15, 15, 26, 0.92);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        height: 60px;
+      }
+      .nav-logo {
+        font-size: 1.3rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--accent), var(--accent3));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .nav-links {
+        display: flex;
+        gap: 4px;
+      }
+      .nav-links a {
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        color: var(--text2);
+        transition: all 0.2s;
+      }
+      .nav-links a:hover,
+      .nav-links a.active {
+        background: var(--accent);
+        color: #fff;
+      }
+      .nav-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.8rem;
+        color: var(--text2);
+      }
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--success);
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+
+      /* ── Layout ── */
+      .main-wrap {
+        padding-top: 60px;
+        display: flex;
+        min-height: 100vh;
+      }
+      .sidebar {
+        width: 280px;
+        min-height: calc(100vh - 60px);
+        background: var(--card);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        position: sticky;
+        top: 60px;
+        height: calc(100vh - 60px);
+      }
+      .content {
+        flex: 1;
+        padding: 24px;
+        overflow-y: auto;
+      }
+
+      /* ── Chat sidebar ── */
+      .chat-header {
+        padding: 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      .chat-header h3 {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--accent3);
+      }
+      .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .msg {
+        max-width: 90%;
+        padding: 10px 14px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        line-height: 1.5;
+        animation: fadeIn 0.3s ease;
+      }
+      .msg.user {
+        align-self: flex-end;
+        background: var(--accent);
+        color: #fff;
+        border-radius: 12px 12px 2px 12px;
+      }
+      .msg.aria {
+        align-self: flex-start;
+        background: var(--card2);
+        color: var(--text);
+        border-radius: 12px 12px 12px 2px;
+        border: 1px solid var(--border);
+      }
+      .msg.aria .aria-name {
+        font-size: 0.72rem;
+        color: var(--accent3);
+        margin-bottom: 4px;
+        font-weight: 600;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .typing {
+        display: flex;
+        gap: 4px;
+        padding: 12px 16px;
+        align-self: flex-start;
+      }
+      .typing span {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent3);
+        animation: bounce 0.8s infinite;
+      }
+      .typing span:nth-child(2) {
+        animation-delay: 0.15s;
+      }
+      .typing span:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+      @keyframes bounce {
+        0%,
+        60%,
+        100% {
+          transform: translateY(0);
+        }
+        30% {
+          transform: translateY(-6px);
+        }
+      }
+      .chat-input-wrap {
+        padding: 12px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        gap: 8px;
+      }
+      .chat-input {
+        flex: 1;
+        background: var(--card2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 8px 12px;
+        color: var(--text);
+        font-size: 0.85rem;
+        resize: none;
+      }
+      .chat-input:focus {
+        border-color: var(--accent);
+      }
+      .send-btn {
+        background: var(--accent);
+        color: #fff;
+        border-radius: 8px;
+        padding: 8px 14px;
+        font-size: 0.85rem;
+        transition: opacity 0.2s;
+      }
+      .send-btn:hover {
+        opacity: 0.85;
+      }
+
+      /* ── Dashboard sections ── */
+      .section {
+        margin-bottom: 32px;
+      }
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+      .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .section-title span {
+        font-size: 1.2rem;
+      }
+      .add-btn {
+        background: var(--accent);
+        color: #fff;
+        border-radius: 8px;
+        padding: 6px 14px;
+        font-size: 0.82rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: opacity 0.2s;
+      }
+      .add-btn:hover {
+        opacity: 0.85;
+      }
+
+      /* ── Cards ── */
+      .cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 12px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition:
+          border-color 0.2s,
+          transform 0.1s;
+      }
+      .card:hover {
+        border-color: var(--accent);
+        transform: translateY(-1px);
+      }
+      .card-icon {
+        font-size: 1.4rem;
+        width: 40px;
+        text-align: center;
+      }
+      .card-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .card-name {
+        font-weight: 500;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .card-meta {
+        font-size: 0.78rem;
+        color: var(--text2);
+        margin-top: 2px;
+      }
+      .card-actions {
+        display: flex;
+        gap: 6px;
+      }
+      .icon-btn {
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 5px 8px;
+        font-size: 0.8rem;
+        color: var(--text2);
+        transition: all 0.2s;
+      }
+      .icon-btn:hover {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      .icon-btn.danger:hover {
+        background: var(--danger);
+        border-color: var(--danger);
+      }
+      .icon-btn.success:hover {
+        background: var(--success);
+        border-color: var(--success);
+      }
+
+      /* ── Priority badges ── */
+      .badge {
+        padding: 2px 8px;
+        border-radius: 99px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .badge.high {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--high);
+      }
+      .badge.med {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--med);
+      }
+      .badge.low {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--low);
+      }
+
+      /* ── Task done state ── */
+      .card.done .card-name {
+        text-decoration: line-through;
+        color: var(--text2);
+      }
+
+      /* ── Budget ── */
+      .budget-summary {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+      .budget-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .budget-label {
+        color: var(--text2);
+        font-size: 0.88rem;
+      }
+      .budget-value {
+        font-weight: 600;
+        font-size: 1rem;
+      }
+      .budget-value.danger {
+        color: var(--danger);
+      }
+      .budget-value.success {
+        color: var(--success);
+      }
+      .progress-bar {
+        height: 8px;
+        background: var(--card2);
+        border-radius: 99px;
+        overflow: hidden;
+        margin-top: 8px;
+      }
+      .progress-fill {
+        height: 100%;
+        border-radius: 99px;
+        transition: width 0.5s ease;
+        background: linear-gradient(90deg, var(--accent), var(--accent3));
+      }
+      .progress-fill.warn {
+        background: linear-gradient(90deg, var(--warn), #f97316);
+      }
+      .progress-fill.danger {
+        background: linear-gradient(90deg, var(--danger), #dc2626);
+      }
+
+      /* ── Goal ── */
+      .goal-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 10px;
+      }
+      .goal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+      .goal-name {
+        font-weight: 500;
+      }
+      .goal-pct {
+        font-size: 0.85rem;
+        color: var(--accent3);
+        font-weight: 600;
+      }
+      .goal-bar {
+        height: 6px;
+        background: var(--card2);
+        border-radius: 99px;
+        overflow: hidden;
+      }
+      .goal-fill {
+        height: 100%;
+        border-radius: 99px;
+        background: linear-gradient(90deg, var(--accent), var(--accent3));
+        transition: width 0.5s ease;
+      }
+      .goal-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 10px;
+      }
+      .goal-edit {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .goal-edit input {
+        width: 60px;
+        background: var(--card2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 4px 8px;
+        color: var(--text);
+        font-size: 0.8rem;
+      }
+
+      /* ── Empty state ── */
+      .empty {
+        text-align: center;
+        padding: 32px;
+        color: var(--text2);
+        font-size: 0.88rem;
+      }
+      .empty-icon {
+        font-size: 2.5rem;
+        margin-bottom: 8px;
+      }
+
+      /* ── Stats bar ── */
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 28px;
+      }
+      .stat-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+      }
+      .stat-num {
+        font-size: 1.6rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--accent), var(--accent3));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .stat-label {
+        font-size: 0.78rem;
+        color: var(--text2);
+        margin-top: 4px;
+      }
+
+      /* ── Modal overlay ── */
+      .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.65);
+        z-index: 200;
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+      .overlay.show {
+        display: flex;
+      }
+      .modal {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 24px;
+        width: 360px;
+        max-width: 90vw;
+        animation: slideUp 0.25s ease;
+      }
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .modal h3 {
+        margin-bottom: 18px;
+        font-size: 1.05rem;
+      }
+      .form-group {
+        margin-bottom: 14px;
+      }
+      .form-group label {
+        display: block;
+        font-size: 0.82rem;
+        color: var(--text2);
+        margin-bottom: 5px;
+      }
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        background: var(--card2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 9px 12px;
+        color: var(--text);
+        font-size: 0.88rem;
+      }
+      .form-group input:focus,
+      .form-group select:focus {
+        border-color: var(--accent);
+      }
+      .modal-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 18px;
+      }
+      .modal-actions button {
+        flex: 1;
+        padding: 9px;
+        border-radius: 8px;
+        font-size: 0.88rem;
+        font-weight: 500;
+        transition: opacity 0.2s;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: #fff;
+      }
+      .btn-primary:hover {
+        opacity: 0.85;
+      }
+      .btn-cancel {
+        background: var(--card2);
+        color: var(--text2);
+        border: 1px solid var(--border);
+      }
+      .btn-cancel:hover {
+        border-color: var(--accent);
+        color: var(--text);
+      }
+
+      /* ── Toast ── */
+      #toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(80px);
+        background: var(--card);
+        border: 1px solid var(--accent);
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-size: 0.88rem;
+        z-index: 500;
+        transition: transform 0.3s ease;
+        white-space: nowrap;
+      }
+      #toast.show {
+        transform: translateX(-50%) translateY(0);
+      }
+
+      /* ── Responsive ── */
+      @media (max-width: 900px) {
+        .sidebar {
+          display: none;
+        }
+        .stats-row {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 500px) {
+        .stats-row {
+          grid-template-columns: 1fr 1fr;
+        }
+        .cards-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- NAV -->
+    <nav>
+      <div class="nav-logo">✨ ARIA</div>
+      <div class="nav-links">
+        <a href="#tasks" class="active">Tasks</a>
+        <a href="#budget">Budget</a>
+        <a href="#meds">Medicines</a>
+        <a href="#goals">Goals</a>
+      </div>
+      <div
+        class="nav-right"
+        style="display: flex; align-items: center; gap: 12px"
+      >
+        <div class="nav-status">
+          <div class="status-dot"></div>
+          <span id="statusText">Connected</span>
+        </div>
+        <div
+          id="userBadge"
+          style="display: flex; align-items: center; gap: 8px"
+        >
+          <div
+            id="userAvatar"
+            style="
+              width: 32px;
+              height: 32px;
+              border-radius: 50%;
+              background: linear-gradient(
+                135deg,
+                var(--accent),
+                var(--accent3)
+              );
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 0.75rem;
+              font-weight: 700;
+              color: #fff;
+            "
+          >
+            ?
+          </div>
+          <span
+            id="userName"
+            style="font-size: 0.85rem; font-weight: 500; color: var(--text)"
+            >Guest</span
+          >
+          <button
+            onclick="logout()"
+            style="
+              background: transparent;
+              border: 1px solid var(--border);
+              border-radius: 7px;
+              padding: 5px 10px;
+              color: var(--text2);
+              font-size: 0.78rem;
+              cursor: pointer;
+              transition: all 0.2s;
+            "
+            onmouseover="
+              this.style.borderColor = 'var(--danger)'
+              this.style.color = '#ef4444'
+            "
+            onmouseout="
+              this.style.borderColor = 'var(--border)'
+              this.style.color = 'var(--text2)'
+            "
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- LAYOUT -->
+    <div class="main-wrap">
+      <!-- SIDEBAR: ARIA CHAT -->
+      <aside class="sidebar">
+        <div class="chat-header">
+          <h3>Chat with ARIA</h3>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+          <div class="msg aria" id="ariaWelcomeMsg">
+            <div class="aria-name">ARIA</div>
+            Hello!  I'm ARIA, your personal AI assistant. How can I help you
+            today?
+          </div>
+        </div>
+        <div class="chat-input-wrap">
+          <textarea
+            class="chat-input"
+            id="chatInput"
+            rows="2"
+            placeholder="Message ARIA..."
+          ></textarea>
+          <button class="send-btn" onclick="sendMessage()">Send</button>
+        </div>
+      </aside>
+
+      <!-- MAIN CONTENT -->
+      <main class="content">
+        <!-- STATS -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-num" id="statTasks">0</div>
+            <div class="stat-label">Pending Tasks</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="statMeds">0</div>
+            <div class="stat-label">Medicines Today</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="statBudget">0</div>
+            <div class="stat-label">PKR Remaining</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="statGoals">0</div>
+            <div class="stat-label">Active Goals</div>
+          </div>
+        </div>
+
+        <!-- TASKS -->
+        <section class="section" id="tasks">
+          <div class="section-header">
+            <div class="section-title">Tasks</div>
+            <button class="add-btn" onclick="openModal('addTaskOverlay')">
+              + Add Task
+            </button>
+          </div>
+          <div class="cards-grid" id="tasksList"></div>
+        </section>
+
+        <!-- BUDGET -->
+        <section class="section" id="budget">
+          <div class="section-header">
+            <div class="section-title">Budget Tracker</div>
+            <button class="add-btn" onclick="openModal('addExpenseOverlay')">
+              + Add Expense
+            </button>
+          </div>
+          <div class="budget-summary">
+            <div class="budget-row">
+              <span class="budget-label">Monthly Budget</span>
+              <span class="budget-value" id="budgetLimit">PKR 60,000</span>
+            </div>
+            <div class="budget-row">
+              <span class="budget-label">Total Spent</span>
+              <span class="budget-value" id="budgetSpent">PKR 0</span>
+            </div>
+            <div class="budget-row">
+              <span class="budget-label">Remaining</span>
+              <span class="budget-value success" id="budgetRemain"
+                >PKR 60,000</span
+              >
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="budgetBar" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="cards-grid" id="expensesList"></div>
+        </section>
+
+        <!-- MEDICINES -->
+        <section class="section" id="meds">
+          <div class="section-header">
+            <div class="section-title">Medicines</div>
+            <button class="add-btn" onclick="openModal('addMedOverlay')">
+              + Add Medicine
+            </button>
+          </div>
+          <div class="cards-grid" id="medsList"></div>
+        </section>
+
+        <!-- GOALS -->
+        <section class="section" id="goals">
+          <div class="section-header">
+            <div class="section-title"> Goals</div>
+            <button class="add-btn" onclick="openModal('addGoalOverlay')">
+              + Add Goal
+            </button>
+          </div>
+          <div id="goalsList"></div>
+        </section>
+      </main>
+    </div>
+
+    <!-- ═══ MODALS ═══ -->
+    <!-- Add Task -->
+    <div class="overlay" id="addTaskOverlay">
+      <div class="modal">
+        <h3>Add New Task</h3>
+        <div class="form-group">
+          <label>Task Name *</label>
+          <input
+            type="text"
+            id="taskName"
+            placeholder="e.g. Submit assignment"
+          />
+        </div>
+        <div class="form-group">
+          <label>Time</label>
+          <input type="time" id="taskTime" />
+        </div>
+        <div class="form-group">
+          <label>Priority</label>
+          <select id="taskPriority">
+            <option value="high">High</option>
+            <option value="med" selected>Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="closeModal('addTaskOverlay')">
+            Cancel
+          </button>
+          <button class="btn-primary" onclick="saveTask()">Add Task</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Expense -->
+    <div class="overlay" id="addExpenseOverlay">
+      <div class="modal">
+        <h3>Add Expense</h3>
+        <div class="form-group">
+          <label>Description *</label>
+          <input type="text" id="expDesc" placeholder="e.g. Groceries" />
+        </div>
+        <div class="form-group">
+          <label>Amount (PKR) *</label>
+          <input type="number" id="expAmount" placeholder="e.g. 1500" />
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="expCat">
+            <option value="Food">Food</option>
+            <option value="Transport">Transport</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Health">Health</option>
+            <option value="Education">Education</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="closeModal('addExpenseOverlay')">
+            Cancel
+          </button>
+          <button class="btn-primary" onclick="saveExpense()">
+            Add Expense
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Medicine -->
+    <div class="overlay" id="addMedOverlay">
+      <div class="modal">
+        <h3>Add Medicine</h3>
+        <div class="form-group">
+          <label>Medicine Name *</label>
+          <input type="text" id="medName" placeholder="e.g. Vitamin D" />
+        </div>
+        <div class="form-group">
+          <label>Time</label>
+          <input type="time" id="medTime" />
+        </div>
+        <div class="form-group">
+          <label>Dosage</label>
+          <input type="text" id="medDose" placeholder="e.g. 1 tablet" />
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="closeModal('addMedOverlay')">
+            Cancel
+          </button>
+          <button class="btn-primary" onclick="saveMed()">Add Medicine</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Goal -->
+    <div class="overlay" id="addGoalOverlay">
+      <div class="modal">
+        <h3>Add Goal</h3>
+        <div class="form-group">
+          <label>Goal Name *</label>
+          <input type="text" id="goalName" placeholder="e.g. Learn Python" />
+        </div>
+        <div class="form-group">
+          <label>Starting Progress: <span id="goalPctLabel">0%</span></label>
+          <input
+            type="range"
+            id="goalProgress"
+            min="0"
+            max="100"
+            value="0"
+            oninput="
+              document.getElementById('goalPctLabel').textContent =
+                this.value + '%'
+            "
+          />
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="closeModal('addGoalOverlay')">
+            Cancel
+          </button>
+          <button class="btn-primary" onclick="saveGoal()">Add Goal</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast"></div>
+
+    <script>
+      // ── Config ────────────────────────────────────────────────────────────────────
+      const API = 'http://localhost:8000'
+      const SESSION = 'aria_' + Math.random().toString(36).slice(2, 8)
+
+      // ── App state ─────────────────────────────────────────────────────────────────
+      let appData = {
+        tasks: [],
+        expenses: [],
+        budgetLimit: 60000,
+        medicines: [],
+        goals: [],
+      }
+
+      // ── Toast ─────────────────────────────────────────────────────────────────────
+      function toast(msg, dur = 2800) {
+        const t = document.getElementById('toast')
+        t.textContent = msg
+        t.classList.add('show')
+        setTimeout(() => t.classList.remove('show'), dur)
+      }
+
+      // ── Modal helpers ─────────────────────────────────────────────────────────────
+      function openModal(id) {
+        document.getElementById(id).classList.add('show')
+      }
+      function closeModal(id) {
+        document.getElementById(id).classList.remove('show')
+      }
+      document.querySelectorAll('.overlay').forEach((o) => {
+        o.addEventListener('click', (e) => {
+          if (e.target === o) o.classList.remove('show')
+        })
+      })
+
+      // ── Sync from backend ─────────────────────────────────────────────────────────
+      async function syncFromBackend() {
+        try {
+          const r = await fetch(`${API}/data`)
+          if (!r.ok) return
+          const d = await r.json()
+          if (d.tasks)
+            appData.tasks = d.tasks.map((t) => ({
+              id: t.id,
+              name: t.title || t.name,
+              time: t.time || '',
+              priority: t.priority || 'med',
+              done: t.done || false,
+            }))
+          if (d.medicines)
+            appData.medicines = d.medicines.map((m) => ({
+              id: m.id,
+              name: m.name,
+              time: m.time || '',
+              dose: m.dosage || m.dose || '1 dose',
+              taken: m.taken || false,
+            }))
+          if (d.expenses)
+            appData.expenses = d.expenses.map((e) => ({
+              id: e.id,
+              desc: e.description || e.desc,
+              amount: e.amount,
+              cat: e.category || 'Other',
+            }))
+          if (d.goals)
+            appData.goals = d.goals.map((g) => ({
+              id: g.id,
+              name: g.title || g.name,
+              progress: g.progress || 0,
+            }))
+          if (d.budget_limit) appData.budgetLimit = d.budget_limit
+          renderAll()
+        } catch (e) {
+          console.warn('Sync failed:', e)
+        }
+      }
+
+      // ── Render all ────────────────────────────────────────────────────────────────
+      function renderAll() {
+        renderTasks()
+        renderBudget()
+        renderMeds()
+        renderGoals()
+        updateStats()
+      }
+
+      function updateStats() {
+        const pending = appData.tasks.filter((t) => !t.done).length
+        const meds = appData.medicines.filter((m) => !m.taken).length
+        const spent = appData.expenses.reduce((s, e) => s + e.amount, 0)
+        const remain = appData.budgetLimit - spent
+        const goals = appData.goals.length
+        document.getElementById('statTasks').textContent = pending
+        document.getElementById('statMeds').textContent = meds
+        document.getElementById('statBudget').textContent = fmtPKR(remain)
+        document.getElementById('statGoals').textContent = goals
+      }
+
+      function fmtPKR(n) {
+        return n >= 1000
+          ? (n / 1000).toFixed(1) + 'k'
+          : Math.round(n).toString()
+      }
+      function fmt(n) {
+        return 'PKR ' + Number(n).toLocaleString('en-PK')
+      }
+
+      // ── Tasks ─────────────────────────────────────────────────────────────────────
+      function renderTasks() {
+        const el = document.getElementById('tasksList')
+        if (!appData.tasks.length) {
+          el.innerHTML =
+            '<div class="empty"><div class="empty-icon">📋</div>No tasks yet. Add one!</div>'
+          return
+        }
+        el.innerHTML = appData.tasks
+          .map(
+            (t) => `
+    <div class="card ${t.done ? 'done' : ''}">
+   
+      <div class="card-body">
+        <div class="card-name">${t.name}</div>
+        <div class="card-meta">${t.time ? + t.time + ' · ' : ''}<span class="badge ${t.priority}">${t.priority}</span></div>
+      </div>
+      <div class="card-actions">
+        ${!t.done ? `<button class="icon-btn success" onclick="toggleTask(${t.id},'${esc(t.name)}')" title="Mark done">✓</button>` : ''}
+        <button class="icon-btn danger" onclick="delTask(${t.id},'${esc(t.name)}')" title="Delete">🗑</button>
+      </div>
+    </div>
+  `
+          )
+          .join('')
+      }
+
+      async function saveTask() {
+        const name = document.getElementById('taskName').value.trim()
+        if (!name) {
+          toast('Task name is required!')
+          return
+        }
+        const time = document.getElementById('taskTime').value
+        const priority = document.getElementById('taskPriority').value
+        try {
+          await fetch(`${API}/add_task`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: name, time, priority }),
+          })
+          await syncFromBackend()
+        } catch {
+          appData.tasks.push({
+            id: Date.now(),
+            name,
+            time,
+            priority,
+            done: false,
+          })
+          renderAll()
+        }
+        document.getElementById('taskName').value = ''
+        document.getElementById('taskTime').value = ''
+        closeModal('addTaskOverlay')
+        toast('Task is Added!')
+      }
+
+      async function toggleTask(id, name) {
+        try {
+          await fetch(`${API}/toggle_task`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: name }),
+          })
+          await syncFromBackend()
+        } catch {
+          const t = appData.tasks.find((x) => x.id === id)
+          if (t) {
+            t.done = !t.done
+            renderAll()
+          }
+        }
+        toast('Task updated!')
+      }
+
+      async function delTask(id, name) {
+        try {
+          await fetch(`${API}/delete_task`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: name }),
+          })
+          await syncFromBackend()
+        } catch {
+          appData.tasks = appData.tasks.filter((x) => x.id !== id)
+          renderAll()
+        }
+        toast('🗑️ Task is deleted!')
+      }
+
+      // ── Budget ────────────────────────────────────────────────────────────────────
+      function renderBudget() {
+        const spent = appData.expenses.reduce((s, e) => s + e.amount, 0)
+        const remain = appData.budgetLimit - spent
+        const pct = Math.min(100, (spent / appData.budgetLimit) * 100)
+        document.getElementById('budgetLimit').textContent = fmt(
+          appData.budgetLimit
+        )
+        document.getElementById('budgetSpent').textContent = fmt(spent)
+        const remEl = document.getElementById('budgetRemain')
+        remEl.textContent = fmt(remain)
+        remEl.className =
+          'budget-value ' +
+          (remain < 0
+            ? 'danger'
+            : remain < appData.budgetLimit * 0.2
+              ? 'warn'
+              : 'success')
+        const bar = document.getElementById('budgetBar')
+        bar.style.width = pct + '%'
+        bar.className =
+          'progress-fill ' + (pct > 90 ? 'danger' : pct > 70 ? 'warn' : '')
+        const el = document.getElementById('expensesList')
+        if (!appData.expenses.length) {
+          el.innerHTML =
+            '<div class="empty">No expenses yet.</div>'
+          return
+        }
+        el.innerHTML = [...appData.expenses]
+          .reverse()
+          .map(
+            (e) => `
+    <div class="card">
+      <div class="card-body">
+        <div class="card-name">${e.desc}</div>
+        <div class="card-meta">${fmt(e.amount)} · ${e.cat}</div>
+      </div>
+      <div class="card-actions">
+        <button class="icon-btn danger" onclick="delExpense(${e.id})" title="Delete">🗑</button>
+      </div>
+    </div>
+  `
+          )
+          .join('')
+      }
+
+      async function saveExpense() {
+        const desc = document.getElementById('expDesc').value.trim()
+        const amount =
+          parseFloat(document.getElementById('expAmount').value) || 0
+        const category = document.getElementById('expCat').value
+        if (!desc || !amount) {
+          toast('Add Description and Amount! ')
+          return
+        }
+        try {
+          await fetch(`${API}/add_expense`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ description: desc, amount, category }),
+          })
+          await syncFromBackend()
+        } catch {
+          appData.expenses.push({ id: Date.now(), desc, amount, cat: category })
+          renderAll()
+        }
+        document.getElementById('expDesc').value = ''
+        document.getElementById('expAmount').value = ''
+        closeModal('addExpenseOverlay')
+        toast(' Expense is Added!')
+      }
+
+      async function delExpense(id) {
+        try {
+          await fetch(`${API}/delete_expense`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id }),
+          })
+          await syncFromBackend()
+        } catch {
+          appData.expenses = appData.expenses.filter((x) => x.id !== id)
+          renderAll()
+        }
+        toast('🗑️ Expense delete ho gaya!')
+      }
+
+      // ── Medicines ─────────────────────────────────────────────────────────────────
+      function renderMeds() {
+        const el = document.getElementById('medsList')
+        if (!appData.medicines.length) {
+          el.innerHTML =
+            '<div class="empty">No medicines added.</div>'
+          return
+        }
+        el.innerHTML = appData.medicines
+          .map(
+            (m) => `
+    <div class="card ${m.taken ? 'done' : ''}">
+      <div class="card-icon">${m.taken ? '✅' : '💊'}</div>
+      <div class="card-body">
+        <div class="card-name">${m.name}</div>
+        <div class="card-meta">${m.dose}${m.time ? ' · ⏰ ' + m.time : ''}</div>
+      </div>
+      <div class="card-actions">
+        <button class="icon-btn success" onclick="toggleMed(${m.id},'${esc(m.name)}')" title="${m.taken ? 'Undo' : 'Mark taken'}">${m.taken ? '↩' : '✓'}</button>
+        <button class="icon-btn danger" onclick="delMed(${m.id},'${esc(m.name)}')" title="Delete">🗑</button>
+      </div>
+    </div>
+  `
+          )
+          .join('')
+      }
+
+      async function saveMed() {
+        const name = document.getElementById('medName').value.trim()
+        if (!name) {
+          toast('Medicine ka naam likhein! ⚠️')
+          return
+        }
+        const time = document.getElementById('medTime').value
+        const dose = document.getElementById('medDose').value || '1 dose'
+        try {
+          await fetch(`${API}/add_medicine`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, time, dosage: dose }),
+          })
+          await syncFromBackend()
+        } catch {
+          appData.medicines.push({
+            id: Date.now(),
+            name,
+            time,
+            dose,
+            taken: false,
+          })
+          renderAll()
+        }
+        document.getElementById('medName').value = ''
+        document.getElementById('medTime').value = ''
+        document.getElementById('medDose').value = ''
+        closeModal('addMedOverlay')
+        toast('Medicine is Added!')
+      }
+
+      async function toggleMed(id, name) {
+        try {
+          await fetch(`${API}/toggle_medicine`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name }),
+          })
+          await syncFromBackend()
+        } catch {
+          const m = appData.medicines.find((x) => x.id === id)
+          if (m) {
+            m.taken = !m.taken
+            renderAll()
+          }
+        }
+        toast('Medicine updated!')
+      }
+
+      async function delMed(id, name) {
+        try {
+          await fetch(`${API}/delete_medicine`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name }),
+          })
+          await syncFromBackend()
+        } catch {
+          appData.medicines = appData.medicines.filter((x) => x.id !== id)
+          renderAll()
+        }
+        toast('Medicine is deleted!')
+      }
+
+      // ── Goals ─────────────────────────────────────────────────────────────────────
+      function renderGoals() {
+        const el = document.getElementById('goalsList')
+        if (!appData.goals.length) {
+          el.innerHTML =
+            '<div class="empty">No goals yet. Set one!</div>'
+          return
+        }
+        el.innerHTML = appData.goals
+          .map(
+            (g) => `
+    <div class="goal-card">
+      <div class="goal-header">
+        <div class="goal-name">${g.name}</div>
+        <div class="goal-pct">${g.progress}%</div>
+      </div>
+      <div class="goal-bar"><div class="goal-fill" style="width:${g.progress}%"></div></div>
+      <div class="goal-footer">
+        <div class="goal-edit">
+          <input type="number" min="0" max="100" value="${g.progress}" id="gp_${g.id}" onchange="updateGoalProgress(${g.id},'${esc(g.name)}',this.value)">
+          <span style="font-size:.75rem;color:var(--text2)">% progress</span>
+        </div>
+        <button class="icon-btn danger" onclick="delGoal(${g.id},'${esc(g.name)}')" title="Delete">🗑</button>
+      </div>
+    </div>
+  `
+          )
+          .join('')
+      }
+
+      async function saveGoal() {
+        const name = document.getElementById('goalName').value.trim()
+        if (!name) {
+          toast('Goal ka naam likhein! ⚠️')
+          return
+        }
+        const progress =
+          parseInt(document.getElementById('goalProgress').value) || 0
+        try {
+          await fetch(`${API}/add_goal`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: name, progress }),
+          })
+          await syncFromBackend()
+        } catch {
+          appData.goals.push({ id: Date.now(), name, progress })
+          renderAll()
+        }
+        document.getElementById('goalName').value = ''
+        document.getElementById('goalProgress').value = '0'
+        document.getElementById('goalPctLabel').textContent = '0%'
+        closeModal('addGoalOverlay')
+        toast('Goal add ho gaya!')
+      }
+
+      async function updateGoalProgress(id, name, val) {
+        const progress = Math.max(0, Math.min(100, parseInt(val) || 0))
+        try {
+          await fetch(`${API}/update_goal`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: name, progress }),
+          })
+          await syncFromBackend()
+        } catch {
+          const g = appData.goals.find((x) => x.id === id)
+          if (g) {
+            g.progress = progress
+            renderAll()
+          }
+        }
+        toast(`${name}: ${progress}%`)
+      }
+
+      async function delGoal(id, name) {
+        try {
+          await fetch(`${API}/delete_goal`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: name }),
+          })
+          await syncFromBackend()
+        } catch {
+          appData.goals = appData.goals.filter((x) => x.id !== id)
+          renderAll()
+        }
+        toast('🗑️ Goal delete ho gaya!')
+      }
+
+      // ── Chat ──────────────────────────────────────────────────────────────────────
+      function addMsg(role, text) {
+        const wrap = document.getElementById('chatMessages')
+        const div = document.createElement('div')
+        div.className = 'msg ' + role
+        if (role === 'aria') {
+          div.innerHTML =
+            '<div class="aria-name">ARIA</div>' + text.replace(/\n/g, '<br>')
+        } else {
+          div.textContent = text
+        }
+        wrap.appendChild(div)
+        wrap.scrollTop = wrap.scrollHeight
+        return div
+      }
+
+      function showTyping() {
+        const wrap = document.getElementById('chatMessages')
+        const div = document.createElement('div')
+        div.className = 'typing'
+        div.id = 'typingDots'
+        div.innerHTML = '<span></span><span></span><span></span>'
+        wrap.appendChild(div)
+        wrap.scrollTop = wrap.scrollHeight
+      }
+      function hideTyping() {
+        const el = document.getElementById('typingDots')
+        if (el) el.remove()
+      }
+
+      async function callAPI(message) {
+        try {
+          const r = await fetch(`${API}/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message, session_id: SESSION }),
+          })
+          if (!r.ok) throw new Error('API error ' + r.status)
+          const d = await r.json()
+          await syncFromBackend()
+          return d.reply
+        } catch (e) {
+          return "I'm having trouble connecting to the server. Please make sure ARIA backend is running! (python main.py)"
+        }
+      }
+
+      async function sendMessage() {
+        const input = document.getElementById('chatInput')
+        const msg = input.value.trim()
+        if (!msg) return
+        input.value = ''
+        addMsg('user', msg)
+        showTyping()
+        const reply = await callAPI(msg)
+        hideTyping()
+        addMsg('aria', reply)
+      }
+
+      document.getElementById('chatInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault()
+          sendMessage()
+        }
+      })
+
+      // ── Nav scroll spy ────────────────────────────────────────────────────────────
+      function initNavScrollSpy() {
+        const links = document.querySelectorAll('.nav-links a')
+        const sections = document.querySelectorAll('section.section')
+        const obs = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((en) => {
+              if (en.isIntersecting) {
+                links.forEach((l) => l.classList.remove('active'))
+                const active = document.querySelector(
+                  `.nav-links a[href="#${en.target.id}"]`
+                )
+                if (active) active.classList.add('active')
+              }
+            })
+          },
+          { threshold: 0.4 }
+        )
+        sections.forEach((s) => obs.observe(s))
+      }
+
+      // ── Utility ───────────────────────────────────────────────────────────────────
+      function esc(s) {
+        return (s || '').replace(/'/g, "\\'")
+      }
+
+      // ── Auth ──────────────────────────────────────────────────────────────────────
+      function initAuth() {
+        const token = localStorage.getItem('aria_token')
+        const userStr = localStorage.getItem('aria_user')
+        if (!token || !userStr) {
+          window.location.href = '/login'
+          return false
+        }
+        const user = JSON.parse(userStr)
+        const name = user.name || 'User'
+        const initials = name
+          .split(' ')
+          .map((w) => w[0])
+          .join('')
+          .toUpperCase()
+          .slice(0, 2)
+        document.getElementById('userName').textContent = name
+        document.getElementById('userAvatar').textContent = initials
+        // Update ARIA greeting
+        const firstMsg = document.querySelector('.msg.aria')
+        if (firstMsg) {
+          const nameEl = firstMsg.querySelector('.aria-name')
+          firstMsg.innerHTML = `<div class="aria-name">ARIA</div>Hello ${name}! I'm ARIA, your personal AI assistant. How can I help you today?`
+        }
+        // Update stat greeting if needed
+        return true
+      }
+
+      function logout() {
+        localStorage.removeItem('aria_token')
+        localStorage.removeItem('aria_user')
+        window.location.href = '/login'
+      }
+
+      // ── Init ──────────────────────────────────────────────────────────────────────
+      window.addEventListener('DOMContentLoaded', () => {
+        if (!initAuth()) return
+        syncFromBackend()
+        initNavScrollSpy()
+        setInterval(syncFromBackend, 30000)
+      })
+    </script>
+  </body>
+</html>
